@@ -1,0 +1,16 @@
+（1）建立TCP服务器的各个系统调用
+i.	int socket(int family,int type,int protocol) 创建一个用于网路通信的socket套接字（描述符）
+ii.	int connect(int sockfd,const struct sockaddr* addr,socklen_t len);//主动跟服务器建立连接
+iii.	size_t send(int sockfd,const void* buf,size_t nbytes,int flag);//发送数据，最后一个参数为0时，可以用write()替代。不能用TCP协议发送0长度的数据包，数据没有发送成功，内核会自动重发。
+iv.	ssize_t recv(int sockfd,void *buf,size_t nbytes,int flags);//接收网络数据，在默认的情况下，如果没有接收到数据，函数会阻塞，直到有数据接收
+v.	int bind(int sockfd,const struct sockaddr* myaddr,socklen_t addrlen);//将本地协议地址与sockfd绑定，这样ip、port就固定了
+vi.	int listen(int sockfd,int backlog);//将套接字由主动修改为被动，使操作系统为该套接字设置一个连接队列，用来记录所有连接到该套接字的链接。
+vii.	int accept(int sockfd,struct sockaddr* cliaddr,socklen_t* addrlen);//从已连接队列取出一个已经建立的连接，如果没有任何连接可用，则进入睡眠等待（阻塞）
+（2） 继上一题，说明socket网络编程有哪些系统调用？其中close是一次就能直接关闭的吗，半关闭状态是怎么产生的？
+i.	由于链接是双向的，两边都要发送FIN包，服务器关闭socket，调用close，引用-1，如果引用还大于0，则socket状态保持不变。可能在多线程中出现半关闭，应使用shutdown，此函数不考虑计数，直接关闭描述符；如果有多个进程共享一个套接字，那么每个进程调用close，引用-1，当所有进程调用close，才会关闭，但是一个进程调用shutdown，其他进程将无法通信。
+（3）对路由协议的了解与介绍。内部网关协议IGP包括RIP，OSPF，和外部网关协议EGP和BGP.
+内部网关协议IGP：RIP，OSPF
+外部网关协议：EGP，BGP
+（4） 路由协议所使用的算法。
+D-V矩阵矢量算法（RIP，IGRP，EIGRP，EGP）、L-S链路状态算法（ospf，isis）
+
