@@ -1,0 +1,117 @@
+//计算有多少个回文子串
+通过中心扩展法来统计所有子串为回文串。
+class Solution {
+public:
+    int countSubstrings(string s) {
+        if(s.size()<=1)
+            return s.size();
+        
+        int count = 0;
+        for(int i = 0;i<s.size();++i)
+        {
+            CountNumber(s,i,i,count);
+            CountNumber(s,i,i+1,count);
+        }
+        return count;
+    }
+    
+    void CountNumber(string s,int begin,int end,int& count)
+    {
+        while(begin>=0 && end<s.size() && s[begin] == s[end])
+        {
+            --begin;
+            ++end;
+            ++count;
+        }
+    }
+};
+
+//计数二进制子串
+以0和1为边界，进行统计，最后根据这个个数进行去最小值计算则可得到。
+class Solution {
+public:
+    int countBinarySubstrings(string s) {
+        vector<int> res;
+        int count = 1;
+        for(int i = 0;i<s.size();++i)
+        {
+            if(s[i+1] && s[i] == s[i+1])
+            {
+                count++;
+            }
+            else
+            {
+                res.push_back(count);
+                count = 1;
+            }
+        }
+        int result = 0;
+        for(int i = 0;i<res.size()-1;++i)
+        {
+            result += min(res[i],res[i+1]);
+        }
+        return result;
+    }
+};
+
+//判断回文链表
+1.先逆置（需要新的地址，不能用之前链表直接比较）
+2.再比较
+class Solution {
+public:
+
+	ListNode* BuyNode(int val)
+	{
+		ListNode* newNode = new ListNode(val);
+		newNode->next = NULL;
+		return newNode;
+	}
+
+	ListNode* CopyList(ListNode* head)
+	{
+		if (NULL == head)
+			return NULL;
+		ListNode* newList = new ListNode(head->val);
+		head = head->next;
+		ListNode* cur = newList;
+
+		
+		while(head)
+		{
+			ListNode* tmp = BuyNode(head->val);
+			cur->next = tmp;
+			head = head->next;
+			cur = cur->next;
+		}
+		cur->next = NULL;
+		return newList;
+	}
+
+	bool isPalindrome(ListNode* head) {
+		if (NULL == head || head->next == NULL)
+			return true;
+
+		ListNode* newHead = CopyList(head);
+
+		ListNode* newList = NULL;
+		ListNode* temp = NULL;
+		ListNode* cur = head;
+		while (cur)
+		{
+			temp = cur;
+			cur = cur->next;
+			temp->next = newList;
+			newList = temp;
+		}
+		while (newList && newHead)
+		{
+			if (newList->val != newHead->val)
+			{
+				return false;
+			}
+			newList = newList->next;
+			newHead = newHead->next;
+		}
+		return true;
+	}
+}; 
