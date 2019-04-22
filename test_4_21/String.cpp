@@ -36,7 +36,12 @@ void String::Expand(size_t n)
 
 void String::PushBack(char c)
 {
+  Insert(_size,c);
+}
 
+void String::PushBack(const char* str)
+{
+  Insert(_size,str);
 }
 
 void String::Insert(size_t pos,char c)
@@ -57,5 +62,211 @@ void String::Insert(size_t pos,char c)
 void String::Insert(size_t pos,const char* str)
 {
   assert(pos < _size);
-  
+  const char* tmp = str;
+  size_t size = 0;
+  for(; *tmp != '\0';++tmp)
+  {
+    ++size;
+  }
+  if(_capacity < _size+size)
+  {
+    Expand(_capacity + size);
+  }
+  for(size_t i = _size;i >= pos;--i)
+  {
+    _str[i+size] = _str[i];
+  }
+  int i = 0;
+  while(*(str + i) != '\0')
+  {
+    _str[pos+i] = str[i];
+    i++;
+  }
+  _size += size;
 }
+
+void String::PopBack()
+{
+  Erase(_size-1,1);
+}
+
+void String::Erase(size_t pos,size_t n)
+{
+  if(0 == _size)
+  {
+    return;
+  }
+  if(0 == n)
+  {
+    return;
+  }
+  assert(pos <= _size);
+  while((pos + n) <= _capacity)
+  {
+    _str[pos] = _str[pos+n];
+    ++pos;
+  }
+  if(_size - n > 0)
+  {
+    _size -= n;
+  }
+  else 
+  {
+    _size = 0;
+  }
+  _str[_size] = 0;
+}
+
+size_t String::Find(char c)
+{
+  for(size_t i = 0;i < _size;++i)
+  {
+    if(c == _str[i])
+    {
+      return i;
+    }
+  }
+  return (size_t)-1;
+}
+
+size_t String::Find(const char* str)
+{
+  const char* fast = _str;
+  const char* slow = _str;
+  const char* cur = str;
+  while(slow < (_str + _size))
+  { 
+    fast = slow;
+    if(*fast == *cur)
+    {
+      while(*fast == *cur)
+      {
+        if(*fast == '\0')
+        {
+          break;
+        }
+        ++cur;
+        ++fast;
+      }
+      if(*cur == '\0')
+      {
+        return slow-_str;
+      }
+    }
+    ++slow;
+    cur = str;
+  }
+  return (size_t)-1;
+}
+
+String String::operator+(char c)
+{
+  String tmp(*this);
+  tmp.PushBack(c);
+  return tmp;
+}
+
+String& String::operator+=(char c)
+{
+  this->PushBack(c);
+  return *this;
+}
+
+String String::operator+(const char* str)
+{
+  String tmp(*this);
+  tmp.PushBack(str);
+  return tmp;
+}
+
+String& String::operator+=(const char* str)
+{
+  this->PushBack(str);
+  return *this;
+}
+
+bool String::operator>(const String& s)
+{
+  const char* _tmp = _str;
+  const char* tmp = s._str;
+  while(*tmp != '\0' && *_tmp != '\0' && *tmp == *_tmp)
+  {
+    tmp++;
+    _tmp++;
+  }
+  if(*_tmp > *tmp)
+  {
+    return true;
+  }
+  else 
+  {
+    return false;
+  }
+}
+
+bool String::operator>=(const String& s)
+{
+  if(*this > s || *this == s)
+  {
+    return true;
+  }
+  else 
+  {
+    return false;
+  }
+}
+
+bool String::operator<(const String& s)
+{
+	const char* _tmp = _str;
+	const char* tmp = s._str;
+	while (*_tmp != '\0' && *tmp != '\0' && *_tmp == *tmp)
+	{
+		_tmp++;
+		tmp++;
+	}
+	if (*_tmp < *tmp)
+	{
+		return true;
+	}
+	return false;
+}
+ 
+
+bool String::operator<=(const String& s)
+{
+	if (*this < s || *this == s)
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
+bool String::operator==(const String& s)
+{
+	const char* _tmp = _str;
+	const char* tmp = s._str;
+	while (*_tmp == *tmp)
+	{
+		if (*_tmp == '\0' && *tmp == '\0')
+		{
+			return true;
+		}
+		tmp++;
+		_tmp++;
+	}
+	return false;
+}
+
+bool String::operator!=(const String& s)
+{
+	if (!(*this == s))
+	{
+		return true;
+	}
+	return false;
+}
+
