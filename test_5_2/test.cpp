@@ -1,5 +1,6 @@
+#include "RBTree.hpp"
 int main()
 {
-  printf("hello world");
-  return 0;
+	TestRBTree();
+	return 0;
 }
