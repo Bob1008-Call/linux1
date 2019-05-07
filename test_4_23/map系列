@@ -1,0 +1,8 @@
+一、map
+1.map是关联容器，它按照特定的次序（按照key来比较）存储由键值key和值value组合而成的元素
+2.在map中，键值key通常用于排序和唯一地标识元素，而值value中存储与此键值key关联的内容，键值key和value类型可以不同，在map的内部，key与value通过成员类型value_type绑定在一起，取名为pair
+3.在内部，map中的元素是按照key值进行排序的
+4.map中通过键值访问当个元素的速度比unorder_map容器慢，但是map迭代器进行迭代可以得到一个有序的序列
+5.map支持下标访问，即在[]中放入key，就可以找到与key对应的value
+6.map通常被实现为二叉搜索树
+二、
