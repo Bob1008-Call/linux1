@@ -1,0 +1,24 @@
+1.内置类型空间：malloc/free与C++中new/delete以及new[]/delete[]
+    2.自定义类型：
+        （1）析构函数没有显式提供
+            （i）new/delete以及new[]/delete，注意：new T[N]不会多开辟四个字节
+        （2）析构函数显式提供
+            （i）new T：
+                第一步：调用void* operator new(size_t size) (循环调用malloc来申请空间)
+                1.申请成功：返回
+                2.申请失败：检测内存空间不足的应对措施是否提供：
+                    （1）提供：循环调用
+                    （2）未提供：抛异常
+                第二步：调用构造T类的构造函数完成对象的初始化工作
+            （ii）delete：
+                第一步：调用析构函数，完成对象中资源的清理工作
+                第二步：void* operator delete(void* p)释放空间free(p)
+            （iii）new T[N]
+                第一步：调用void* operator new[](size_t size = sizeof(T)*N+4)
+                    （1）void operator new(size)
+                第二步：将对象个数N放在空间前4个字节
+                第三步：调用N次构造函数完成对象的构造
+            （iiii）
+                第一步：从P空间之前的4个字节中取对象的个数
+                第二步：调用N次析构函数，倒着析构N个对象
+                第三步：void operator delete[](void *p) void* operator delete
