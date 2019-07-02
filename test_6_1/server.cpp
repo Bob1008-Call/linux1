@@ -1,8 +1,5 @@
-
 #include <iostream>
- 
 #include "server.h"
- 
 using namespace std;
  
 // 服务端类成员函数
@@ -27,7 +24,10 @@ void Server::Init() {
     
      //创建监听socket
     listener = socket(PF_INET, SOCK_STREAM, 0);
-    if(listener < 0) { perror("listener"); exit(-1);}
+    if(listener < 0) {
+      perror("listener");
+      exit(-1);
+    }
     
     //绑定地址
     if( bind(listener, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) < 0) {
@@ -45,7 +45,7 @@ void Server::Init() {
     cout << "Start to listen: " << SERVER_IP << endl;
  
     //在内核中创建事件表 epfd是一个句柄 
-    epfd = epoll_create (EPOLL_SIZE);
+    epfd = epoll_create(EPOLL_SIZE);
     
     if(epfd < 0) {
         perror("epfd error");
@@ -103,7 +103,6 @@ int Server::SendBroadcastMessage(int clientfd)
              << clients_list.size()
              << " client in the char room"
              << endl;
- 
     }
     // 发送广播消息给所有客户端
     else 
@@ -161,7 +160,7 @@ int Server::SendBroadcastMessage(int clientfd)
                 memcpy(msg.content,format_message,BUF_SIZE);
                 bzero(send_buf,BUF_SIZE);
                 memcpy(send_buf,&msg,sizeof(msg));
-                if(send(msg.fromID,send_buf,sizeof(send_buf),0)<0)
+                if(send(msg.fromID,send_buf,sizeof(send_buf),0) < 0)
                     return -1;
             }
         }
@@ -200,7 +199,7 @@ void Server::Start() {
             {
                 struct sockaddr_in client_address;
                 socklen_t client_addrLength = sizeof(struct sockaddr_in);
-                int clientfd = accept( listener, ( struct sockaddr* )&client_address, &client_addrLength );
+                int clientfd = accept( listener, (struct sockaddr*)&client_address, &client_addrLength );
  
                 cout << "client connection from: "
                      << inet_ntoa(client_address.sin_addr) << ":"
@@ -237,7 +236,6 @@ void Server::Start() {
             }
         }
     }
- 
     // 关闭服务
     Close();
 }

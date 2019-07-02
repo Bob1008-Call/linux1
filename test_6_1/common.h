@@ -67,6 +67,5 @@ struct Msg
     int fromID;
     int toID;
     char content[BUF_SIZE];
- 
 };
 #endif // CHATROOM_COMMON_H
