@@ -11,7 +11,7 @@ typedef struct student
 void InitLink(LDPstudent* head)
 {
   *head = NULL;
-  LDPstudent ptr;
+  LDPstudent ptr = NULL;
   LDPstudent r = ptr;
   int n;
   int number;

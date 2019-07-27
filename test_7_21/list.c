@@ -10,7 +10,8 @@ typedef struct student
 
 void InitLink(LPstudent* head)
 {
-  Lstudent *ptr,*r;
+  Lstudent *ptr = NULL;
+  Lstudent *r = NULL;
   *head = NULL;
   int n;
   int number; 
@@ -42,7 +43,6 @@ void Print_Link(Lstudent* ptr)
     sleep(1);
   }
 }
-
 int main()
 {
   LPstudent head;
@@ -50,3 +50,4 @@ int main()
   Print_Link(head);
   return 0;
 }
+
