@@ -1,4 +1,3 @@
-
 #ifndef  CHATROOM_COMMON_H
 #define CHATROOM_COMMON_H
  
@@ -45,7 +44,7 @@
  
 // 注册新的fd到epollfd中
 // 参数enable_et表示是否启用ET模式，如果为True则启用，否则使用LT模式
-static void addfd( int epollfd, int fd, bool enable_et )
+static void addfd(int epollfd, int fd, bool enable_et )
 {
     struct epoll_event ev;
     ev.data.fd = fd;

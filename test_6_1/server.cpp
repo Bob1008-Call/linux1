@@ -54,7 +54,6 @@ void Server::Init() {
  
     //往事件表里添加监听事件
     addfd(epfd, listener, true);
- 
 }
  
 // 关闭服务，清理并关闭文件描述符

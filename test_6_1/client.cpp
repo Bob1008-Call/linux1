@@ -118,7 +118,7 @@ void Client::Start() {
                 //结构体转换为字符串
                 memcpy(send_buf,&msg,sizeof(msg));
                 if( write(pipe_fd[1], send_buf, sizeof(send_buf)) < 0 ) { 
-                    perror("fork error");
+                    perror("writer error");
                     exit(-1);
                 }
             }
