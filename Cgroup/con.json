@@ -1,0 +1,15 @@
+{
+  "CPU":
+  {
+    "cpu.cfs_period_us":
+    "cpu.cfs_quota_us":
+  },
+  "MEMORY":
+  {
+    "memory.limit_in_bytes":
+  },
+  "CONTROL":
+  {
+    "memory.oom_control":
+  }
+}
