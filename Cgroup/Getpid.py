@@ -1,6 +1,5 @@
 import os
 import json
-import codecs
 
 ID_PATH = "/data/czk/Cgroup/id.txt"
 CONFIG_PATH = "/data/czk/Cgroup/configure.json"
@@ -8,7 +7,7 @@ OOM_CONTROL_PATH = "/sys/fs/cgroup/memory/g1/memory.oom_control"
 PROCESS_KEYWORD = "mem"
 
 class limit:
-        fd = 1
+        fd_con = 1
         cresult = ''
         id_path = ID_PATH
         config_path = CONFIG_PATH
@@ -19,8 +18,8 @@ class limit:
                 '''
                 construct function
                 '''
-                with open(self.config_path,'r') as self.fd:
-                        self.cresult=json.load(self.fd)
+                with open(self.config_path,'r') as self.fd_con:
+                        self.cresult=json.load(self.fd_con)
 
         def loadcpu_con(self):
                 '''
@@ -73,7 +72,11 @@ class limit:
                 except IOError:
                         print "Error(limitcpu): no such file or open fail"
                 else:
+                        fd.close()
                         print "limit cpu operator success"
+
+        def __del__():
+            pass
 
 if __name__ == '__main__':
         try:
