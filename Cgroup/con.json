@@ -1,15 +1,15 @@
 {
   "CPU":
   {
-    "cpu.cfs_period_us":
-    "cpu.cfs_quota_us":
+    "cpu.cfs_period_us":-1,
+    "cpu.cfs_quota_us":50000
   },
   "MEMORY":
   {
-    "memory.limit_in_bytes":
+    "memory.limit_in_bytes":1073741824
   },
   "CONTROL":
   {
-    "memory.oom_control":
+    "memory.oom_control":1
   }
 }

@@ -1,8 +1,8 @@
 import os
 import json
 
-ID_PATH = "/data/czk/Cgroup/id.txt"
-CONFIG_PATH = "/data/czk/Cgroup/configure.json"
+ID_PATH = "/home/caozongkai/git/linux1/Cgroup/id.txt"
+CONFIG_PATH = "/home/caozongkai/git/linux1/Cgroup/con.json"
 OOM_CONTROL_PATH = "/sys/fs/cgroup/memory/g1/memory.oom_control"
 PROCESS_KEYWORD = "mem"
 
@@ -27,7 +27,7 @@ class limit:
                 '''
                 try:
                         os.system("cgset -r cpu.cfs_quota_us=%s g1" %self.cresult["CPU"]["cpu.cfs_quota_us"])
-                        os.system("cgset -r cpu.cfs_period_us=%s g1" %self.cresult["CPU"]["cpu.cfs_quota_us"])
+                        os.system("cgset -r cpu.cfs_period_us=%s g1" %self.cresult["CPU"]["cpu.cfs_period_us"])
                 except WindowsError:
                         print "cpu load system called error"
                 else:
@@ -38,9 +38,9 @@ class limit:
                 loading MEMORY configuration
                 '''
                 try:
-                        os.system("cgset -r memory.limit_in_bytes=%s g1" %self.cresult["MEMORY"]["memory.limit_in_bytes"])
+                        os.system("cgset -r memory.limit_in_bytes=%s /sys/fs/cgroup/memory/g1" %self.cresult["MEMORY"]["memory.limit_in_bytes"])
                         os.system("sudo sh -c 'echo %s >> %s'" %(self.cresult["CONTROL"]["memory.oom_control"],self.oom_control_path))
-                except WindowsError:
+                except IOError:
                         print "memory load system called error"
                 else:
                         print "memory load success"
@@ -54,21 +54,29 @@ class limit:
         def limitmemory(self):
                 '''add PID to process memory Cgroup'''
                 try:
-                        fd=open(self.id_path,'r')
-                        for line in fd:
-                                os.system("cgclassify -g memory:g1 %s" %line)
+                        fd = open(self.id_path,'r')
+                        while True:
+                            line = fd.readline()
+                            if line:
+                                    os.system("cgclassify -g memory:g1 %s" %line)
+                            else:
+                                break
                 except IOError:
                         print "Error(limitmemory): no such file or open failed"
-                else:
+                finally:
                         print "limit memory operator success"
                         fd.close()
 
-        def limitcpu(id_path):
+        def limitcpu(self):
                 '''add PID to process cpu Cgroup'''
                 try:
-                        fd=open(id_path,'r')
-                        for line in fd:
+                        fd = open(self.id_path,'r')
+                        while True:
+                            line = fd.readline()
+                            if line:
                                 os.system("cgclassify -g cpu:g1 %s" %line)
+                            else:
+                                break
                 except IOError:
                         print "Error(limitcpu): no such file or open fail"
                 else:
@@ -80,7 +88,8 @@ class limit:
 
 if __name__ == '__main__':
         try:
-                limit1 = limit()
+            limit1 = limit()
+            while True:
                 limit1.loadmemory_con()
                 limit1.getpidtofile()
                 limit1.limitmemory()
