@@ -1,10 +1,9 @@
 import os
 import json
 
-ID_PATH = "/data/czk/project/id.txt"
-CONFIG_PATH = "/data/czk/project/con.json"
-PROCESS_KEYWORD = "highmem"
-
+ID_PATH = "/home/caozongkai/git/linux1/Cgroup/id.txt"
+CONFIG_PATH = "/home/caozongkai/git/linux1/Cgroup/con.json"
+PROCESS_KEYWORD = "highcpu"
 class limit:
   fd_con = 1
   cresult = ''
@@ -18,6 +17,12 @@ class limit:
     '''
     with open(self.config_path,'r') as self.fd_con:
       self.cresult=json.load(self.fd_con)
+
+  def getpidtofile(self):
+    '''
+    get process_keyword PID and dup to file
+    '''
+    os.system("ps -ef|grep %s|grep -v 'grep'|awk '{print $2}' > %s" %(self.process_keyword,self.id_path))
 
   def loadcpu_con(self):
     '''
@@ -44,30 +49,22 @@ class limit:
     else:
       pass
 
-  def getpidtofile(self):
+  def loadcpuset_con(self):
     '''
-    get process_keyword PID and dup to file
+    loading CPUSET configuration
     '''
-    os.system("ps -ef|grep %s|grep -v 'grep'|awk '{print $2}' > %s" %(self.process_keyword,self.id_path))
-
-  def limitmemory(self):
-    '''add PID to process memory Cgroup'''
     try:
-      fd = open(self.id_path,'r')
-      while True:
-        line = fd.readline()
-        if line:
-          os.system("echo %s > %s" %(int(line),self.cresult["MEMORY"]["task_path"]))
-        else:
-          break
+      os.system("echo %s > %s" %(self.cresult["CPUSET"]["cpus"]["val"],self.cresult["CPUSET"]["cpus"]["path"]))
+      #os.system("echo %s > %s" %(self.cresult["CPUSET"]["mems"]["val"],self.cresult["CPUSET"]["mems"]["path"]))
     except IOError:
-      print "Error(limitmemory): no such file or open failed"
-    finally:
-      fd.close()
+      print "cpuset load system called error"
+    else:
+      pass
 
   def limitcpu(self):
     '''add PID to process cpu Cgroup'''
     try:
+      self.loadcpu_con()
       fd = open(self.id_path,'r')
       while True:
         line = fd.readline()
@@ -76,18 +73,57 @@ class limit:
         else:
           break
     except IOError:
-      print "Error(limitcpu): no such file or open fail"
+      print "Error(limitcpu): no such file or open failed"
     else:
       fd.close()
+
+  def limitmemory(self):
+    '''add PID to process memory Cgroup'''
+    try:
+      self.loadmemory_con()
+      fd = open(self.id_path,'r')
+      while True:
+        line = fd.readline()
+        if line:
+          os.system("echo %d > %s" %(int(line),self.cresult["MEMORY"]["task_path"]))
+        else:
+          break
+    except IOError:
+      print "Error(limitmemory): no such file or open failed"
+    finally:
+      fd.close()
+
+  def limitcpuset(self):
+    "add PID to process memory Cgroup"
+    try:
+      self.loadcpuset_con()
+      fd = open(self.id_path,'r')
+      while True:
+        line = fd.readline()
+        if line:
+          os.system("echo %s > %s" %(line,self.cresult["CPUSET"]["task_path"]))
+        else:
+          break
+    except IOError:
+      print "Error(limitcpuset): no such file or open failed"
+    finally:
+      fd.close()
+
+  def limitcputest(self):
+    self.getpidtofile()
+    self.limitcpu()
+    self.limitcpuset()
+
+  def limitmemorytest(self):
+    self.getpidtofile()
+    self.limitmemory()
 
   def __del__(self):
     self.fd_con.close()
 
 if __name__ == '__main__':
   try:
-    limit1=limit()
-    limit1.loadcpu_con()
-    limit1.getpidtofile()
-    limit1.limitcpu()
+    limit = limit()
+    limit.limitcputest()
   except ZeroDivisionError as err:
     print('Handling run-time error:', err)

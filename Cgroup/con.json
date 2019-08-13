@@ -1,15 +1,49 @@
 {
   "CPU":
   {
-    "cpu.cfs_period_us":-1,
-    "cpu.cfs_quota_us":50000
+    "period":
+    {
+      "val":10000,
+      "path":"/sys/fs/cgroup/cpu/g1/cpu.cfs_period_us"
+    },
+    "quota":
+    {
+      "val":5000,
+      "path":"/sys/fs/cgroup/cpu/g1/cpu.cfs_quota_us"
+    },
+    "task_path":"/sys/fs/cgroup/cpu/g1/cgroup.procs"
   },
   "MEMORY":
   {
-    "memory.limit_in_bytes":1073741824
+    "limit":
+    {
+      "val":2147483648,
+      "path":"/sys/fs/cgroup/memory/g1/memory.limit_in_bytes"
+    },
+    "soft_limit":
+    {
+      "val":2147483648,
+      "path":"/sys/fs/cgroup/memory/g1/memory.soft_limit_in_bytes"
+    },
+    "oom_control":
+    {
+      "val":1,
+      "path":"/sys/fs/cgroup/memory/g1/memory.oom_control"
+    },
+    "task_path":"/sys/fs/cgroup/memory/g1/tasks"
   },
-  "CONTROL":
+  "CPUSET":
   {
-    "memory.oom_control":1
+    "cpus":
+    {
+      "val":"0-1",
+      "path":"/sys/fs/cgroup/cpuset/g1/cpuset.cpus"
+    },
+    "mems":
+    {
+      "val":"1",
+      "path":"/sys/fs/cgroup/cpuset/g1/cpuset.mems"
+    },
+    "task_path":"/sys/fs/cgroup/cpuset/g1/tasks"
   }
 }
