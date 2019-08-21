@@ -1,129 +1,179 @@
-import os
+#!/usr/bin/python
+#coding=utf-8
+
 import json
+import subprocess
 
-ID_PATH = "/home/caozongkai/git/linux1/Cgroup/id.txt"
-CONFIG_PATH = "/home/caozongkai/git/linux1/Cgroup/con.json"
-PROCESS_KEYWORD = "highcpu"
-class limit:
-  fd_con = 1
-  cresult = ''
-  id_path = ID_PATH
-  config_path = CONFIG_PATH
-  process_keyword = PROCESS_KEYWORD
+CONFIG_PATH = "/data/czk/project/con.json"
 
+class LimitBase(object):
+  '''
+  基础配置
+  '''
+  #初始化成员 conf 和 typelist
   def __init__(self):
-    '''
-    construct function
-    '''
-    with open(self.config_path,'r') as self.fd_con:
-      self.cresult=json.load(self.fd_con)
+    with open(CONFIG_PATH,'r') as con_fd:
+      self.conf=json.load(con_fd)
+    self.typelist=list()
+    if isinstance(self.conf,dict):
+      key_name="type"
+      for key in self.conf.keys():
+        if key == key_name and self.conf[self.conf[key]]["USE"]=="1":
+          self.typelist.append(self.conf[key])
 
-  def getpidtofile(self):
-    '''
-    get process_keyword PID and dup to file
-    '''
-    os.system("ps -ef|grep %s|grep -v 'grep'|awk '{print $2}' > %s" %(self.process_keyword,self.id_path))
+  #系统调用
+  def sub_popen(self,cmd):
+    p1 = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
 
-  def loadcpu_con(self):
-    '''
-    loading CPU configuration
-    '''
-    try:
-      os.system("echo %s > %s" %(self.cresult["CPU"]["period"]["val"],self.cresult["CPU"]["period"]["path"]))
-      os.system("echo %s > %s" %(self.cresult["CPU"]["quota"]["val"],self.cresult["CPU"]["quota"]["path"]))
-    except IOError:
-      print "cpu load system called error"
-    else:
-      pass
+  #获取进程ID
+  def get_pid(self):
+    if self.typelist:
+      for typename in self.typelist:
+        cmd="ps -ef | grep "
+        cmd+=typename
+        cmd+="| grep -v 'grep'"
+        cmd+="| grep -v /"
+        cmd+=typename
+        cmd+="| grep -v '/conf'"
+        cmd+="| awk '{print $2}'"
+        cmd+=" > "
+        cmd+=str(self.conf[typename]["ID_PATH"])
+        try:
+          self.sub_popen(cmd)
+        except IOError:
+          print "Error(getpid): write pid to file error"
 
-  def loadmemory_con(self):
-    '''
-    loading MEMORY configuration
-    '''
-    try:
-      os.system("echo %s > %s" %(self.cresult["MEMORY"]["limit"]["val"],self.cresult["MEMORY"]["limit"]["path"]))
-      os.system("echo %s > %s" %(self.cresult["MEMORY"]["soft_limit"]["val"],self.cresult["MEMORY"]["soft_limit"]["path"]))
-      os.system("sudo sh -c 'echo %s >> %s'" %(self.cresult["MEMORY"]["oom_control"]["val"],self.cresult["MEMORY"]["oom_control"]["path"]))
-    except IOError:
-      print "memory load system called error"
-    else:
-      pass
+class LimitCpuResou(LimitBase):
+  """
+  限制CPU
+  """
+  def __init__(self):
+    super(LimitCpuResou, self).__init__()
 
-  def loadcpuset_con(self):
-    '''
-    loading CPUSET configuration
-    '''
-    try:
-      os.system("echo %s > %s" %(self.cresult["CPUSET"]["cpus"]["val"],self.cresult["CPUSET"]["cpus"]["path"]))
-      #os.system("echo %s > %s" %(self.cresult["CPUSET"]["mems"]["val"],self.cresult["CPUSET"]["mems"]["path"]))
-    except IOError:
-      print "cpuset load system called error"
-    else:
-      pass
+  def mk_cpug(self):
+    if self.typelist:
+      for typename in self.typelist:
+        if self.conf[typename]["USE"]=="1":
+          cmd="mkdir "
+          cmd+=str(self.conf[typename]["CPU"]["dir_path"])
+          self.sub_popen(cmd)
 
-  def limitcpu(self):
-    '''add PID to process cpu Cgroup'''
-    try:
-      self.loadcpu_con()
-      fd = open(self.id_path,'r')
-      while True:
-        line = fd.readline()
-        if line:
-          os.system("echo %d > %s" %(int(line),self.cresult["CPU"]["task_path"]))
+  #加载CPU配置
+  def config_cpu(self):
+    if self.typelist:
+      for typename in self.typelist:
+        cmd_p="echo "
+        cmd_p+=str(self.conf[typename]["CPU"]["period"]["val"])
+        cmd_p+=" > "
+        cmd_p+=str(self.conf[typename]["CPU"]["period"]["path"])
+
+        cmd_q="echo "
+        cmd_q+=str(self.conf[typename]["CPU"]["quota"]["val"])
+        cmd_q+=" > "
+        cmd_q+=str(self.conf[typename]["CPU"]["quota"]["path"])
+        try:
+          self.sub_popen(cmd_p)
+          self.sub_popen(cmd_q)
+        except IOError:
+          print "cpu load system called error"
         else:
-          break
-    except IOError:
-      print "Error(limitcpu): no such file or open failed"
-    else:
-      fd.close()
+          pass
 
-  def limitmemory(self):
-    '''add PID to process memory Cgroup'''
-    try:
-      self.loadmemory_con()
-      fd = open(self.id_path,'r')
-      while True:
-        line = fd.readline()
-        if line:
-          os.system("echo %d > %s" %(int(line),self.cresult["MEMORY"]["task_path"]))
+  #将进程 pid 加入到 CPU 控制组
+  def push_to_cpug(self):
+    if self.typelist:
+      for typename in self.typelist:
+        with open(self.conf[typename]["ID_PATH"],'r') as fd:
+          while True:
+            line = fd.readline()
+            line = line.strip('\n')
+            if line:
+              #构造指令
+              #例如: echo 1000 > /sys/fs/cgroup/cpu/python/tasks
+              cmd="echo "
+              cmd+=str(line)
+              cmd+=" > "
+              cmd+=self.conf[typename]["CPU"]["task_path"]
+              try:
+                self.sub_popen(cmd)
+              except IOError:
+                print "Error(limitcpu): no such file process"
+              finally:
+                pass
+            else:
+              break
+
+class LimitMemResou(LimitBase):
+  """
+  限制内存
+  """
+  def __init__(self):
+    super(LimitMemResou, self).__init__()
+
+  def mk_memoryg(self):
+    if self.typelist:
+      for typename in self.typelist:
+        if self.conf[typename]["USE"]=="1":
+          cmd="mkdir "
+          cmd+=str(self.conf[typename]["MEMORY"]["dir_path"])
+          self.sub_popen(cmd)
+
+
+  #加载内存配置
+  def config_mem(self):
+    if self.typelist:
+      for typename in self.typelist:
+        cmd_limit="echo "
+        cmd_limit+=str(self.conf[typename]["MEMORY"]["limit"]["val"])
+        cmd_limit+=" > "
+        cmd_limit+=str(self.conf[typename]["MEMORY"]["limit"]["path"])
+
+        cmd_softlimit="echo "
+        cmd_softlimit+=str(self.conf[typename]["MEMORY"]["soft_limit"]["val"])
+        cmd_softlimit+=" > "
+        cmd_softlimit+=str(self.conf[typename]["MEMORY"]["soft_limit"]["path"])
+
+        cmd_oom="echo "
+        cmd_oom+=str(self.conf[typename]["MEMORY"]["oom_control"]["val"])
+        cmd_oom+=" > "
+        cmd_oom+=str(self.conf[typename]["MEMORY"]["oom_control"]["path"])
+
+        try:
+          self.sub_popen(cmd_limit)
+          self.sub_popen(cmd_softlimit)
+          self.sub_popen(cmd_oom)
+        except IOError:
+          print "memory load system called error"
         else:
-          break
-    except IOError:
-      print "Error(limitmemory): no such file or open failed"
-    finally:
-      fd.close()
+          pass
 
-  def limitcpuset(self):
-    "add PID to process memory Cgroup"
-    try:
-      self.loadcpuset_con()
-      fd = open(self.id_path,'r')
-      while True:
-        line = fd.readline()
-        if line:
-          os.system("echo %s > %s" %(line,self.cresult["CPUSET"]["task_path"]))
-        else:
-          break
-    except IOError:
-      print "Error(limitcpuset): no such file or open failed"
-    finally:
-      fd.close()
+  #将进程 pid 加入到 memory 控制组中
+  def push_to_memg(self):
+    if self.typelist:
+      for typename in self.typelist:
+        with open(self.conf[typename]["ID_PATH"],'r') as fd:
+          while True:
+            line = fd.readline()
+            line = line.strip('\n')
+            if line:
+              #构造指令
+              #例如: echo 1000 > /sys/fs/cgroup/cpu/python/tasks
+              cmd="echo "
+              cmd+=str(line)
+              cmd+=" > "
+              cmd+=self.conf[typename]["MEMORY"]["task_path"]
+              try:
+                self.sub_popen(cmd)
+              except IOError:
+                print "Error(limitmemory): no such file process"
+              finally:
+                pass
+            else:
+              break
 
-  def limitcputest(self):
-    self.getpidtofile()
-    self.limitcpu()
-    self.limitcpuset()
-
-  def limitmemorytest(self):
-    self.getpidtofile()
-    self.limitmemory()
-
-  def __del__(self):
-    self.fd_con.close()
-
-if __name__ == '__main__':
-  try:
-    limit = limit()
-    limit.limitcputest()
-  except ZeroDivisionError as err:
-    print('Handling run-time error:', err)
+if "__main__"==__name__:
+  limitbase=LimitBase()
+  limitbase.get_pid()
+  limitcpu=LimitCpuResou()
+  limitcpu.config_cpu()
+  limitcpu.push_to_cpug()
