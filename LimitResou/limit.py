@@ -1,5 +1,9 @@
 #!/usr/bin/python
 #coding=utf-8
+"""
+  限制系统资源
+  已完成：CPU 内存
+"""
 
 import os
 import abc
@@ -11,6 +15,9 @@ import subprocess
 CONFIG_PATH = "/data/czk/project/con.json"
 
 class Singleton(type):
+  '''
+  单例模式
+  '''
   def __init__(cls, name, bases, dct):
     super(Singleton, cls).__init__(name, bases, dct)
     cls.instance=None
@@ -24,9 +31,9 @@ class LimitBase(object):
   '''
   基础配置
   '''
-  #初始化成员 conf 和 typelist
+  #初始化成员 conf  typelist whitelist
   def __init__(self):
-    self.white_list=list()
+    self.whitelist=list()
     with open(CONFIG_PATH,'r') as con_fd:
       self.conf=json.load(con_fd)
     self.typelist=list()
@@ -38,10 +45,11 @@ class LimitBase(object):
 
   #系统调用
   def sub_popen(self,cmd,flag=False):
-    p = subprocess.Popen(cmd,shell=True,\
-                          stdout=subprocess.PIPE,\
-                          stderr=subprocess.PIPE,\
-                          close_fds=True)
+    p = subprocess.Popen(cmd,\
+                         shell=True,\
+                         stdout=subprocess.PIPE,\
+                         stderr=subprocess.PIPE,\
+                         close_fds=True)
     if flag:
       return p
     else:
@@ -49,7 +57,11 @@ class LimitBase(object):
 
   #打印日志接口
   def log(self,txt):
-    logging.basicConfig(filename="limit.log",level=logging.INFO,format='%(asctime)s %(levelname)s %(message)s %(filename)s %(funcName)s  %(lineno)s',datefmt='%Y/%m/%d %H:%M:%S %p')
+    #打印当前日志到默认文件路径
+    logging.basicConfig(filename="limittest.log",\
+                        level=logging.INFO,\
+                        format='%(asctime)s %(levelname)s %(message)s %(filename)s %(funcName)s %(lineno)s',\
+                        datefmt='%Y/%m/%d %H:%M:%S %p')
     logging.info(txt)
 
   #创建存放 PID 路径
@@ -58,10 +70,10 @@ class LimitBase(object):
     if not os.path.exists(idpath):
       cmd="mkdir "
       cmd+=idpath
-      p = self.popen(cmd)
+      p = self.sub_popen(cmd)
 
 
-  #完善白名单
+  #构造白名单
   def get_white_id(self):
     list_id=[]
     for list_name in self.conf["whitelist"]["name"]:
@@ -70,8 +82,8 @@ class LimitBase(object):
       cmd+=list_name
       cmd+=" |grep -v grep"
       cmd+=" |awk '{print $2}'"
+      #构造获取白名单进程 PID 的指令
       p=self.sub_popen(cmd,True)
-      self.log(p)
       while True:
         tmp_id=p.stdout.readline()
         tmp_id=tmp_id.strip("\n")
@@ -79,7 +91,8 @@ class LimitBase(object):
           list_id.append(tmp_id)
         else:
           break
-    self.white_list=list_id
+    self.whitelist=list_id
+
 
   #获取进程ID
   def get_pid(self):
@@ -90,9 +103,9 @@ class LimitBase(object):
         cmd+="| grep -v grep"
         cmd+="| awk '{print $2}'"
         cmd+=" > "
+        #构造获取不同类型进程 PID 的指令
         cmd+=str(self.conf[typename]["ID_PATH"])
         p=self.sub_popen(cmd)
-        self.log(p)
 
   #三个抽象方法
   #创建进程控制组
@@ -110,11 +123,10 @@ class LimitBase(object):
   def add_pid_to_cgroup(self):
     pass
 
-
 class LimitCpuResou(LimitBase):
-  """
+  '''
   限制CPU
-  """
+  '''
   def __init__(self):
     super(LimitCpuResou, self).__init__()
 
@@ -126,8 +138,9 @@ class LimitCpuResou(LimitBase):
           if not os.path.exists(self.conf[typename]["CPU"]["dir_path"]):
             cmd="mkdir "
             cmd+=str(self.conf[typename]["CPU"]["dir_path"])
-            p=self.sub_popen(cmd)
+            p = self.sub_popen(cmd)
             self.log(p)
+
 
   #加载 CPU 配置
   def load_config(self):
@@ -142,10 +155,9 @@ class LimitCpuResou(LimitBase):
         cmd_q+=str(self.conf[typename]["CPU"]["quota"]["val"])
         cmd_q+=" > "
         cmd_q+=str(self.conf[typename]["CPU"]["quota"]["path"])
-        p=self.sub_popen(cmd_p)
-        q=self.sub_popen(cmd_q)
-        self.log(p)
-        self.log(q)
+
+        self.sub_popen(cmd_p)
+        self.sub_popen(cmd_q)
 
   #将进程 pid 加入到 CPU 控制组
   def add_pid_to_cgroup(self):
@@ -158,7 +170,7 @@ class LimitCpuResou(LimitBase):
               line = fd.readline()
               line = line.strip('\n')
               if line:
-                if line in self.white_list:
+                if line in self.whitelist:
                   continue
                 else:
                   #构造指令
@@ -173,9 +185,9 @@ class LimitCpuResou(LimitBase):
                 break
 
 class LimitMemResou(LimitBase):
-  """
+  '''
   限制内存
-  """
+  '''
   def __init__(self):
     super(LimitMemResou, self).__init__()
 
@@ -187,7 +199,7 @@ class LimitMemResou(LimitBase):
           if os.path.exists(self.conf[typename]["MEMORY"]["dir_path"]):
             cmd="mkdir "
             cmd+=str(self.conf[typename]["MEMORY"]["dir_path"])
-            p=self.sub_popen(cmd)
+            p = self.sub_popen(cmd)
             self.log(p)
 
   #加载内存配置
@@ -209,31 +221,88 @@ class LimitMemResou(LimitBase):
         cmd_oom+=" > "
         cmd_oom+=str(self.conf[typename]["MEMORY"]["oom_control"]["path"])
 
-        p1=self.sub_popen(cmd_limit)
-        p2=self.sub_popen(cmd_softlimit)
-        p3=self.sub_popen(cmd_oom)
-        self.log(p1)
-        self.log(p2)
-        self.log(p3)
+        self.sub_popen(cmd_limit)
+        self.sub_popen(cmd_softlimit)
+        self.sub_popen(cmd_oom)
 
 
   #将进程 pid 加入到 memory 控制组中
   def add_pid_to_cgroup(self):
+    self.get_white_id()
     if self.typelist:
       for typename in self.typelist:
-        if self.conf[typename]["CPU"]["USE"]=="1":
+        if self.conf[typename]["MEMORY"]["USE"]=="1":
           with open(self.conf[typename]["ID_PATH"],'r') as fd:
             while True:
               line = fd.readline()
               line = line.strip('\n')
               if line:
-                if line not in self.conf["whitelist"]["id"]:
-                  #构造指令
-                  #例如: echo 1000 > /sys/fs/cgroup/cpu/python/tasks
+                if line in self.whitelist:
+                  continue
+                else:
                   cmd="echo "
                   cmd+=str(line)
                   cmd+=" > "
                   cmd+=self.conf[typename]["MEMORY"]["task_path"]
+                  p=self.sub_popen(cmd)
+                  self.log(p)
+              else:
+                break
+
+class LimitDiskResou(LimitBase):
+  '''
+    限制磁盘读写
+  '''
+  def __init__(self):
+    super(LimitDskResou, self).__init__()
+
+  #创建 blkio 子系统（控制组）
+  def mk_cgroup(self):
+    if self.typelist:
+      for typename in self.typelist:
+        if self.conf[typename]["USE"]=="1":
+          if os.path.exists(self.conf[typename]["DISK"]["dir_path"]):
+            cmd="mkdir "
+            cmd+=str(self.conf[typename]["DISK"]["dir_path"])
+            p = self.sub_popen(cmd)
+            self.log(p)
+
+  #加载磁盘配置
+  def load_config(self):
+    if self.typelist:
+      for typename in self.typelist:
+        # 8:16 是磁盘驱动号
+        cmd_read="echo 8:16 "
+        cmd_read+=str(self.conf[typename]["DISK"]["read_bps"]["val"])
+        cmd_read+=" > "
+        cmd_read+=str(self.conf[typename]["DISK"]["read_bps"]["path"])
+
+        cmd_write="echo 8:16 "
+        cmd_write+=str(self.conf[typename]["DISK"]["write_bps"]["val"])
+        cmd_write+=" > "
+        cmd_write+=str(self.conf[typename]["DISK"]["write_bps"]["path"])
+
+        self.sub_popen(cmd_read)
+        self.sub_popen(cmd_write)
+
+  #将进程 pid 加入到 blkio 控制组中
+  def add_pid_to_cgroup(self):
+    self.get_white_id()
+    if self.typelist:
+      for typename in self.typelist:
+        if self.conf[typename]["DISK"]["USE"]=="1":
+          with open(self.conf[typename]["ID_PATH"],'r') as fd:
+            while True:
+              line = fd.readline()
+              line = line.strip('\n')
+              if line:
+                if line in self.whitelist:
+                  continue
+                else:
+                  cmd="echo "
+                  cmd+=str(line)
+                  cmd+=" > "
+                  cmd+=self.conf[typename]["DISK"]["task_path"]
                   p=self.sub_popen(cmd)
                   self.log(p)
               else:
@@ -245,15 +314,38 @@ class Run(object):
     pass
 
   def run(self):
+    '''
+      限制CPU
+    '''
     self.base = LimitBase()
     self.derived = LimitCpuResou()
-    self.base.get_pid()
     self.derived.mk_cgroup()
     self.derived.load_config()
-    self.derived.add_pid_to_cgroup()
+    while True:
+      self.base.get_pid()
+      self.derived.add_pid_to_cgroup()
+      time.sleep(1)
+    '''
+      限制内存
+    '''
+    #self.base = LimitBase()
+    #self.base.get_pid()
 
+    #self.derived = LimitMemResou()
+    #self.derived.mk_cgroup()
+    #self.derived.load_config()
+    #self.derived.add_pid_to_cgroup()
+
+    '''
+      限制磁盘
+    '''
+    #self.base = LimitBase()
+    #self.base.get_pid()
+
+    #self.derived = LimitDiskResou()
+    #self.derived.mk_cgroup()
+    #self.derived.load_config()
+    #self.derived.add_pid_to_cgroup()
 if "__main__"==__name__:
-  while True:
-    run1=Run()
-    run1.run()
-    time.sleep(0.1)
+  run1=Run()
+  run1.run()

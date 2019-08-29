@@ -22,7 +22,7 @@
     },
     "MEMORY":
     {
-      "USE":"1",
+      "USE":"0",
       "dir_path":"/sys/fs/cgroup/memory/python3",
       "task_path":"/sys/fs/cgroup/memory/python3/tasks",
       "limit":
@@ -39,6 +39,22 @@
       {
         "val":1,
         "path":"/sys/fs/cgroup/memory/python3/memory.oom_control"
+      }
+    },
+    "DISK":
+    {
+      "USE":"0",
+      "dir_path":"/sys/fs/cgroup/disk/python3",
+      "task_path":"/sys/fs/cgroup/disk/python3/tasks",
+      "read_bps":
+      {
+        "val":10485760,
+        "path":"/sys/fs/cgroup/blkio/python3/blkio.throttle.read_bps_device"
+      },
+      "write_bps":
+      {
+        "val":10485760,
+        "path":"/sys/fs/cgroup/blkio/python3/blkio.throttle.write_bps_device"
       }
     }
   },
